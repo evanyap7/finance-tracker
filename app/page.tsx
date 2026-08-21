@@ -60,24 +60,31 @@ export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [reportingCurrency, setReportingCurrency] =
+    useState<Currency>("USD");
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     type: "expense" as "income" | "expense",
     category: "Food",
     amount: "",
-    currency: "SGD" as Currency,
+    currency: "USD" as Currency,
     note: "",
   });
 
   async function loadTransactions() {
     setLoading(true);
 
-    const response = await fetch("/api/transactions");
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/transactions");
+      const data = await response.json();
 
-    setTransactions(Array.isArray(data) ? data : []);
-    setLoading(false);
+      setTransactions(Array.isArray(data) ? data : []);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -86,7 +93,7 @@ export default function Home() {
 
   const summaryByCurrency = useMemo(() => {
     return transactions.reduce<
-      Record<Currency, { income: number; expenses: number }>
+      Partial<Record<Currency, { income: number; expenses: number }>>
     >((summary, transaction) => {
       const current = summary[transaction.currency] ?? {
         income: 0,
@@ -101,72 +108,81 @@ export default function Home() {
 
       summary[transaction.currency] = current;
       return summary;
-    }, {} as Record<Currency, { income: number; expenses: number }>);
+    }, {});
   }, [transactions]);
 
-  const primarySummary = summaryByCurrency.SGD ?? {
+  const selectedSummary = summaryByCurrency[reportingCurrency] ?? {
     income: 0,
     expenses: 0,
   };
+
+  const netCashFlow = selectedSummary.income - selectedSummary.expenses;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitting(true);
 
-    const response = await fetch("/api/transactions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...form,
-        amount: Number(form.amount),
-      }),
-    });
+    try {
+      const response = await fetch("/api/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...form,
+          amount: Number(form.amount),
+        }),
+      });
 
-    if (response.ok) {
+      if (!response.ok) {
+        throw new Error("Could not save transaction.");
+      }
+
       setForm({
         date: new Date().toISOString().slice(0, 10),
         type: "expense",
         category: "Food",
         amount: "",
-        currency: "SGD",
+        currency: form.currency,
         note: "",
       });
 
       await loadTransactions();
-    } else {
+    } catch {
       alert("Could not save the transaction. Check your setup.");
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   }
 
-  async function handleDelete(id: string) {
-    const shouldDelete = window.confirm(
-      "Archive this transaction? You can restore it later from Google Sheets."
+  async function handleArchive(id: string) {
+    const shouldArchive = window.confirm(
+      "Archive this transaction? It will remain in Google Sheets and can be restored later."
     );
 
-    if (!shouldDelete) return;
+    if (!shouldArchive) return;
 
-    const response = await fetch("/api/transactions", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
+    try {
+      const response = await fetch("/api/transactions", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        throw new Error("Could not archive transaction.");
+      }
+
+      await loadTransactions();
+    } catch {
       alert("Could not archive the transaction.");
-      return;
     }
-
-    await loadTransactions();
   }
 
   function formatCurrency(value: number, currency: Currency) {
-    return new Intl.NumberFormat("en-SG", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
       maximumFractionDigits: currency === "JPY" || currency === "KRW" ? 0 : 2,
@@ -180,64 +196,101 @@ export default function Home() {
           <p className="text-sm font-medium text-indigo-600">
             Personal Finance
           </p>
+
           <h1 className="text-3xl font-bold tracking-tight">
             Finance tracker
           </h1>
-          <p className="mt-2 text-slate-600">
-            Track transactions in multiple currencies. Summary cards show SGD.
-          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="text-slate-600">
+              Track income, expenses, and net cash flow across currencies.
+            </p>
+
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              Summary currency
+              <select
+                value={reportingCurrency}
+                onChange={(event) =>
+                  setReportingCurrency(event.target.value as Currency)
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500"
+              >
+                {currencyOptions.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </header>
 
         <section className="mb-8 grid gap-4 md:grid-cols-3">
           <SummaryCard
-            label="SGD balance"
-            value={primarySummary.income - primarySummary.expenses}
-            currency="SGD"
+            label="Net cash flow"
+            value={netCashFlow}
+            currency={reportingCurrency}
+            positive={netCashFlow >= 0}
+            negative={netCashFlow < 0}
           />
+
           <SummaryCard
-            label="SGD income"
-            value={primarySummary.income}
-            currency="SGD"
+            label="Income"
+            value={selectedSummary.income}
+            currency={reportingCurrency}
             positive
           />
+
           <SummaryCard
-            label="SGD expenses"
-            value={primarySummary.expenses}
-            currency="SGD"
+            label="Expenses"
+            value={selectedSummary.expenses}
+            currency={reportingCurrency}
             negative
           />
         </section>
 
-        {Object.entries(summaryByCurrency).some(([currency]) => currency !== "SGD") && (
+        {Object.entries(summaryByCurrency).some(
+          ([currency]) => currency !== reportingCurrency
+        ) && (
           <section className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">
-              Other currency balances
-            </h2>
+            <h2 className="mb-4 text-lg font-semibold">Other currencies</h2>
+
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(summaryByCurrency)
-                .filter(([currency]) => currency !== "SGD")
-                .map(([currency, values]) => (
-                  <div
-                    key={currency}
-                    className="rounded-xl border border-slate-100 p-4"
-                  >
-                    <p className="text-sm font-medium text-slate-500">
-                      {currency}
-                    </p>
-                    <p className="mt-1 text-xl font-bold">
-                      {formatCurrency(
-                        values.income - values.expenses,
-                        currency as Currency
-                      )}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      In {formatCurrency(values.income, currency as Currency)}
-                      {" · "}
-                      Out{" "}
-                      {formatCurrency(values.expenses, currency as Currency)}
-                    </p>
-                  </div>
-                ))}
+                .filter(([currency]) => currency !== reportingCurrency)
+                .map(([currency, values]) => {
+                  const currencyCode = currency as Currency;
+                  const net = values.income - values.expenses;
+
+                  return (
+                    <div
+                      key={currency}
+                      className="rounded-xl border border-slate-100 p-4"
+                    >
+                      <p className="text-sm font-medium text-slate-500">
+                        {currency}
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-500">
+                        Net cash flow
+                      </p>
+
+                      <p
+                        className={`mt-1 text-xl font-bold ${
+                          net >= 0 ? "text-emerald-600" : "text-rose-600"
+                        }`}
+                      >
+                        {formatCurrency(net, currencyCode)}
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        In {formatCurrency(values.income, currencyCode)}
+                        {" · "}
+                        Out {formatCurrency(values.expenses, currencyCode)}
+                      </p>
+                    </div>
+                  );
+                })}
             </div>
           </section>
         )}
@@ -313,7 +366,7 @@ export default function Home() {
                 </select>
               </Field>
 
-              <Field label={`Amount (${form.currency})`}>
+              <Field label="Amount">
                 <input
                   type="number"
                   min="0.01"
@@ -354,7 +407,9 @@ export default function Home() {
           <section className="rounded-2xl bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Recent transactions</h2>
+
               <button
+                type="button"
                 onClick={loadTransactions}
                 className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
@@ -366,7 +421,7 @@ export default function Home() {
               <p className="text-slate-500">Loading transactions...</p>
             ) : transactions.length === 0 ? (
               <p className="text-slate-500">
-                No active transactions. Archived ones remain in Google Sheets.
+                No active transactions. Archived items remain in Google Sheets.
               </p>
             ) : (
               <div className="space-y-3">
@@ -400,7 +455,7 @@ export default function Home() {
 
                       <button
                         type="button"
-                        onClick={() => handleDelete(transaction.id)}
+                        onClick={() => handleArchive(transaction.id)}
                         className="rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
                         aria-label={`Archive ${transaction.category} transaction`}
                       >
@@ -440,8 +495,9 @@ function SummaryCard({
   return (
     <article className="rounded-2xl bg-white p-6 shadow-sm">
       <p className="text-sm font-medium text-slate-500">{label}</p>
+
       <p className={`mt-2 text-3xl font-bold ${color}`}>
-        {new Intl.NumberFormat("en-SG", {
+        {new Intl.NumberFormat("en-US", {
           style: "currency",
           currency,
           maximumFractionDigits: currency === "JPY" || currency === "KRW" ? 0 : 2,
@@ -463,6 +519,7 @@ function Field({
       <span className="mb-1.5 block text-sm font-medium text-slate-700">
         {label}
       </span>
+
       {children}
     </label>
   );
