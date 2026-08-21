@@ -1,6 +1,25 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { addTransaction, getTransactions } from "@/lib/sheets";
+import {
+  addTransaction,
+  getTransactions,
+  softDeleteTransaction,
+} from "@/lib/sheets";
+
+const currencies = [
+  "SGD",
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "AUD",
+  "MYR",
+  "CNY",
+  "HKD",
+  "KRW",
+  "THB",
+  "IDR",
+] as const;
 
 const transactionSchema = z.object({
   date: z.string().min(1),
@@ -8,6 +27,7 @@ const transactionSchema = z.object({
   category: z.string().min(1).max(50),
   amount: z.number().positive(),
   note: z.string().max(300).optional(),
+  currency: z.enum(currencies),
 });
 
 export async function GET() {
@@ -41,6 +61,7 @@ export async function POST(request: Request) {
       category: input.category,
       amount: input.amount,
       note: input.note ?? "",
+      currency: input.currency,
       createdAt: new Date().toISOString(),
     };
 
@@ -53,6 +74,30 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Unable to create transaction." },
       { status: 400 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+
+    if (typeof id !== "string" || id.length === 0) {
+      return NextResponse.json(
+        { error: "A valid transaction ID is required." },
+        { status: 400 }
+      );
+    }
+
+    await softDeleteTransaction(id);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { error: "Unable to delete transaction." },
+      { status: 500 }
     );
   }
 }

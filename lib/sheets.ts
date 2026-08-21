@@ -19,6 +19,20 @@ const sheets = google.sheets({
   auth,
 });
 
+export type Currency =
+  | "SGD"
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "JPY"
+  | "AUD"
+  | "MYR"
+  | "CNY"
+  | "HKD"
+  | "KRW"
+  | "THB"
+  | "IDR";
+
 export type Transaction = {
   id: string;
   date: string;
@@ -27,15 +41,21 @@ export type Transaction = {
   amount: number;
   note: string;
   createdAt: string;
+  currency: Currency;
+  deletedAt: string;
 };
 
-export async function getTransactions(): Promise<Transaction[]> {
+type StoredTransaction = Transaction & {
+  rowNumber: number;
+};
+
+async function getStoredTransactions(): Promise<StoredTransaction[]> {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: "Transactions!A2:G",
+    range: "Transactions!A2:I",
   });
 
-  return (response.data.values ?? []).map((row) => ({
+  return (response.data.values ?? []).map((row, index) => ({
     id: row[0] ?? "",
     date: row[1] ?? "",
     type: row[2] === "income" ? "income" : "expense",
@@ -43,13 +63,26 @@ export async function getTransactions(): Promise<Transaction[]> {
     amount: Number(row[4] ?? 0),
     note: row[5] ?? "",
     createdAt: row[6] ?? "",
+    currency: (row[7] || "SGD") as Currency,
+    deletedAt: row[8] ?? "",
+    rowNumber: index + 2,
   }));
 }
 
-export async function addTransaction(transaction: Transaction) {
+export async function getTransactions(): Promise<Transaction[]> {
+  const transactions = await getStoredTransactions();
+
+  return transactions
+    .filter((transaction) => !transaction.deletedAt)
+    .map(({ rowNumber, ...transaction }) => transaction);
+}
+
+export async function addTransaction(
+  transaction: Omit<Transaction, "deletedAt">
+) {
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: "Transactions!A:G",
+    range: "Transactions!A:I",
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
@@ -61,7 +94,30 @@ export async function addTransaction(transaction: Transaction) {
         transaction.amount,
         transaction.note,
         transaction.createdAt,
+        transaction.currency,
+        "",
       ]],
+    },
+  });
+}
+
+export async function softDeleteTransaction(id: string) {
+  const transactions = await getStoredTransactions();
+
+  const transaction = transactions.find(
+    (item) => item.id === id && !item.deletedAt
+  );
+
+  if (!transaction) {
+    throw new Error("Transaction not found or already deleted.");
+  }
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `Transactions!I${transaction.rowNumber}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[new Date().toISOString()]],
     },
   });
 }
