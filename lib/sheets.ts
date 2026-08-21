@@ -49,21 +49,40 @@ type StoredTransaction = Transaction & {
   rowNumber: number;
 };
 
+function formatSheetDate(value: string | number | undefined): string {
+  if (value === undefined || value === "") {
+    return "";
+  }
+
+  const text = String(value);
+
+  if (!/^\d+(\.\d+)?$/.test(text)) {
+    return text;
+  }
+
+  const serial = Number(text);
+  const date = new Date(Date.UTC(1899, 11, 30) + serial * 86_400_000);
+
+  return date.toISOString().slice(0, 10);
+}
+
 async function getStoredTransactions(): Promise<StoredTransaction[]> {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: "Transactions!A2:I",
+    valueRenderOption: "UNFORMATTED_VALUE",
+    dateTimeRenderOption: "SERIAL_NUMBER",
   });
 
   return (response.data.values ?? []).map((row, index) => ({
     id: row[0] ?? "",
-    date: row[1] ?? "",
+    date: formatSheetDate(row[1]),
     type: row[2] === "income" ? "income" : "expense",
     category: row[3] ?? "Other",
     amount: Number(row[4] ?? 0),
     note: row[5] ?? "",
     createdAt: row[6] ?? "",
-    currency: (row[7] || "SGD") as Currency,
+    currency: (row[7] || "USD") as Currency,
     deletedAt: row[8] ?? "",
     rowNumber: index + 2,
   }));
@@ -109,7 +128,7 @@ export async function softDeleteTransaction(id: string) {
   );
 
   if (!transaction) {
-    throw new Error("Transaction not found or already deleted.");
+    throw new Error("Transaction not found or already archived.");
   }
 
   await sheets.spreadsheets.values.update({
