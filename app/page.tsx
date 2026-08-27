@@ -61,14 +61,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [reportingCurrency, setReportingCurrency] =
-    useState<Currency>("USD");
+    useState<Currency>("EUR");
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     type: "expense" as "income" | "expense",
     category: "Food",
     amount: "",
-    currency: "USD" as Currency,
+    currency: "EUR" as Currency,
     note: "",
   });
 
@@ -252,48 +252,47 @@ export default function Home() {
         {Object.entries(summaryByCurrency).some(
           ([currency]) => currency !== reportingCurrency
         ) && (
-          <section className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Other currencies</h2>
+            <section className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Other currencies</h2>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.entries(summaryByCurrency)
-                .filter(([currency]) => currency !== reportingCurrency)
-                .map(([currency, values]) => {
-                  const currencyCode = currency as Currency;
-                  const net = values.income - values.expenses;
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {Object.entries(summaryByCurrency)
+                  .filter(([currency]) => currency !== reportingCurrency)
+                  .map(([currency, values]) => {
+                    const currencyCode = currency as Currency;
+                    const net = values.income - values.expenses;
 
-                  return (
-                    <div
-                      key={currency}
-                      className="rounded-xl border border-slate-100 p-4"
-                    >
-                      <p className="text-sm font-medium text-slate-500">
-                        {currency}
-                      </p>
-
-                      <p className="mt-1 text-sm font-medium text-slate-500">
-                        Net cash flow
-                      </p>
-
-                      <p
-                        className={`mt-1 text-xl font-bold ${
-                          net >= 0 ? "text-emerald-600" : "text-rose-600"
-                        }`}
+                    return (
+                      <div
+                        key={currency}
+                        className="rounded-xl border border-slate-100 p-4"
                       >
-                        {formatCurrency(net, currencyCode)}
-                      </p>
+                        <p className="text-sm font-medium text-slate-500">
+                          {currency}
+                        </p>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        In {formatCurrency(values.income, currencyCode)}
-                        {" · "}
-                        Out {formatCurrency(values.expenses, currencyCode)}
-                      </p>
-                    </div>
-                  );
-                })}
-            </div>
-          </section>
-        )}
+                        <p className="mt-1 text-sm font-medium text-slate-500">
+                          Net cash flow
+                        </p>
+
+                        <p
+                          className={`mt-1 text-xl font-bold ${net >= 0 ? "text-emerald-600" : "text-rose-600"
+                            }`}
+                        >
+                          {formatCurrency(net, currencyCode)}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          In {formatCurrency(values.income, currencyCode)}
+                          {" · "}
+                          Out {formatCurrency(values.expenses, currencyCode)}
+                        </p>
+                      </div>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
 
         <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
           <form
