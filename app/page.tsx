@@ -3,9 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Currency =
-  | "SGD"
-  | "USD"
   | "EUR"
+  | "USD"
+  | "SGD"
   | "GBP"
   | "JPY"
   | "AUD"
@@ -52,9 +52,9 @@ const CATEGORY_MAP: Record<string, CategoryMeta> = {
 const categoryKeys = Object.keys(CATEGORY_MAP);
 
 const currencyOptions: { code: Currency; label: string; symbol: string }[] = [
-  { code: "SGD", label: "SGD — Singapore Dollar", symbol: "S$" },
-  { code: "USD", label: "USD — US Dollar", symbol: "$" },
   { code: "EUR", label: "EUR — Euro", symbol: "€" },
+  { code: "USD", label: "USD — US Dollar", symbol: "$" },
+  { code: "SGD", label: "SGD — Singapore Dollar", symbol: "S$" },
   { code: "GBP", label: "GBP — British Pound", symbol: "£" },
   { code: "JPY", label: "JPY — Japanese Yen", symbol: "¥" },
   { code: "AUD", label: "AUD — Australian Dollar", symbol: "A$" },
@@ -70,7 +70,7 @@ export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [reportingCurrency, setReportingCurrency] = useState<Currency>("SGD");
+  const [reportingCurrency, setReportingCurrency] = useState<Currency>("EUR");
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,7 +89,7 @@ export default function Home() {
     type: "expense" as "income" | "expense",
     category: "Food",
     amount: "",
-    currency: "SGD" as Currency,
+    currency: "EUR" as Currency,
     note: "",
   });
 
@@ -680,7 +680,7 @@ export default function Home() {
                     required
                   />
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 font-semibold">
-                    {currencyOptions.find((c) => c.code === form.currency)?.symbol || "$"}
+                    {currencyOptions.find((c) => c.code === form.currency)?.symbol || "€"}
                   </div>
                 </div>
 

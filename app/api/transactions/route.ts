@@ -7,9 +7,9 @@ import {
 } from "@/lib/sheets";
 
 const currencies = [
-  "SGD",
-  "USD",
   "EUR",
+  "USD",
+  "SGD",
   "GBP",
   "JPY",
   "AUD",

@@ -82,7 +82,7 @@ async function getStoredTransactions(): Promise<StoredTransaction[]> {
     amount: Number(row[4] ?? 0),
     note: row[5] ?? "",
     createdAt: row[6] ?? "",
-    currency: (row[7] || "USD") as Currency,
+    currency: (row[7] || "EUR") as Currency,
     deletedAt: row[8] ?? "",
     rowNumber: index + 2,
   }));
