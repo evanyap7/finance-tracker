@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# credentials / service account keys
+finance-tracker-*.json
+*credentials*.json
+*.key
+
 # vercel
 .vercel
 
