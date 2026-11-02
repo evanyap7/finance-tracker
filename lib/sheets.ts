@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { formatSheetDate, type Currency } from "./ledger";
 
 const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -19,19 +20,7 @@ const sheets = google.sheets({
   auth,
 });
 
-export type Currency =
-  | "SGD"
-  | "USD"
-  | "EUR"
-  | "GBP"
-  | "JPY"
-  | "AUD"
-  | "MYR"
-  | "CNY"
-  | "HKD"
-  | "KRW"
-  | "THB"
-  | "IDR";
+export type { Currency };
 
 export type Transaction = {
   id: string;
@@ -48,23 +37,6 @@ export type Transaction = {
 type StoredTransaction = Transaction & {
   rowNumber: number;
 };
-
-function formatSheetDate(value: string | number | undefined): string {
-  if (value === undefined || value === "") {
-    return "";
-  }
-
-  const text = String(value);
-
-  if (!/^\d+(\.\d+)?$/.test(text)) {
-    return text;
-  }
-
-  const serial = Number(text);
-  const date = new Date(Date.UTC(1899, 11, 30) + serial * 86_400_000);
-
-  return date.toISOString().slice(0, 10);
-}
 
 async function getStoredTransactions(): Promise<StoredTransaction[]> {
   const response = await sheets.spreadsheets.values.get({

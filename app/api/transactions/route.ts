@@ -1,34 +1,10 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { transactionSchema } from "@/lib/ledger";
 import {
   addTransaction,
   getTransactions,
   softDeleteTransaction,
 } from "@/lib/sheets";
-
-const currencies = [
-  "EUR",
-  "USD",
-  "SGD",
-  "GBP",
-  "JPY",
-  "AUD",
-  "MYR",
-  "CNY",
-  "HKD",
-  "KRW",
-  "THB",
-  "IDR",
-] as const;
-
-const transactionSchema = z.object({
-  date: z.string().min(1),
-  type: z.enum(["income", "expense"]),
-  category: z.string().min(1).max(50),
-  amount: z.number().positive(),
-  note: z.string().max(300).optional(),
-  currency: z.enum(currencies),
-});
 
 export async function GET() {
   try {
