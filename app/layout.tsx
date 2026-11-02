@@ -9,8 +9,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Clara's Money Diary 🎀 | Finance Tracker",
-  description: "A cute and modern personal finance tracker made especially for Clara Heng Jia Ee",
+  title: "Finance Tracker",
+  description: "A personal income and expense tracker that keeps its data in a Google Sheet",
 };
 
 export default function RootLayout({

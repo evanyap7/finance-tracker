@@ -263,26 +263,6 @@ export default function Home() {
       )}
 
       <div className="mx-auto max-w-6xl relative z-10">
-        {/* Top Announcement & Dedication Pill */}
-        <div className="mb-6 flex justify-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-white/70 px-4 py-1.5 text-xs sm:text-sm font-medium text-pink-800 shadow-xs backdrop-blur-md">
-            <span className="animate-pulse">✨</span>
-            <span>
-              Made with 💖 by{" "}
-              <a
-                href="https://www.linkedin.com/in/evanyapzhikai/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-pink-600 underline decoration-pink-300 underline-offset-2 transition hover:text-pink-700 hover:decoration-pink-500"
-              >
-                Evan
-              </a>{" "}
-              especially for <strong className="font-semibold text-pink-600">Clara Heng Jia Ee</strong>
-            </span>
-            <span>🎀</span>
-          </div>
-        </div>
-
         {/* Header section */}
         <header className="mb-8 rounded-3xl glass-panel p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 -mr-6 -mt-6 h-36 w-36 rounded-full bg-pink-100/50 blur-2xl pointer-events-none" />
@@ -295,7 +275,7 @@ export default function Home() {
                 <span className="inline-block animate-gentle-float">✨</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800 bg-gradient-to-r from-pink-600 via-rose-500 to-fuchsia-600 bg-clip-text text-transparent">
-                Clara&apos;s Money Diary 🎀
+                Finance Tracker
               </h1>
               <p className="mt-2 text-slate-600 text-sm sm:text-base max-w-xl">
                 Track sweet moments, mindful spending, and watch your savings bloom! 🌷✨
@@ -775,7 +755,7 @@ export default function Home() {
                   🌸
                 </div>
                 <p className="text-sm font-semibold text-pink-700">
-                  Opening your money diary...
+                  Loading your transactions...
                 </p>
                 <p className="text-xs text-slate-400 mt-1">Just a sparkling second ✨</p>
               </div>
@@ -877,24 +857,20 @@ export default function Home() {
           </section>
         </section>
 
-        {/* Footer with dedication */}
+        {/* Footer */}
         <footer className="mt-16 text-center border-t border-pink-100 pt-8 pb-4">
           <div className="inline-flex flex-col sm:flex-row items-center gap-2 rounded-2xl bg-white/60 px-6 py-3 border border-pink-200/60 shadow-xs backdrop-blur-md">
             <span className="text-sm">🌸</span>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Made with 💖 by{" "}
+              Built by{" "}
               <a
                 href="https://www.linkedin.com/in/evanyapzhikai/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-pink-600 underline decoration-pink-300 underline-offset-2 hover:text-pink-700 transition"
               >
-                Evan
-              </a>{" "}
-              especially for{" "}
-              <span className="font-bold text-pink-600">
-                Clara Heng Jia Ee
-              </span>
+                Evan Yap
+              </a>
             </p>
             <span className="text-sm">🎀</span>
           </div>
