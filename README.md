@@ -29,3 +29,11 @@ npm run dev     # http://localhost:3000
 ```
 
 Create a Google service account, share your Sheet with its email, and set `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PRIVATE_KEY` in `.env.local`. The app refuses to start without them.
+
+## AI assistance
+
+I built this with AI coding assistants, including Claude Code. The instructions they work from are in `CLAUDE.md` and `AGENTS.md`, and the tests are how I check their work.
+
+## License
+
+The code is [MIT](LICENSE).
