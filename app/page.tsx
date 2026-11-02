@@ -1,20 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-
-type Currency =
-  | "EUR"
-  | "USD"
-  | "SGD"
-  | "GBP"
-  | "JPY"
-  | "AUD"
-  | "MYR"
-  | "CNY"
-  | "HKD"
-  | "KRW"
-  | "THB"
-  | "IDR";
+import {
+  type Currency,
+  expenseBreakdown,
+  filterTransactions,
+  formatCurrency,
+  summarizeByCurrency,
+} from "@/lib/ledger";
 
 type Transaction = {
   id: string;
@@ -118,25 +111,10 @@ export default function Home() {
     loadTransactions();
   }, []);
 
-  const summaryByCurrency = useMemo(() => {
-    return transactions.reduce<
-      Partial<Record<Currency, { income: number; expenses: number }>>
-    >((summary, transaction) => {
-      const current = summary[transaction.currency] ?? {
-        income: 0,
-        expenses: 0,
-      };
-
-      if (transaction.type === "income") {
-        current.income += transaction.amount;
-      } else {
-        current.expenses += transaction.amount;
-      }
-
-      summary[transaction.currency] = current;
-      return summary;
-    }, {});
-  }, [transactions]);
+  const summaryByCurrency = useMemo(
+    () => summarizeByCurrency(transactions),
+    [transactions]
+  );
 
   const selectedSummary = summaryByCurrency[reportingCurrency] ?? {
     income: 0,
@@ -146,43 +124,20 @@ export default function Home() {
   const netCashFlow = selectedSummary.income - selectedSummary.expenses;
 
   // Category spending breakdown for selected currency
-  const categoryExpenses = useMemo(() => {
-    const expenses = transactions.filter(
-      (t) => t.type === "expense" && t.currency === reportingCurrency
-    );
-    const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-    if (total === 0) return [];
-
-    const grouped: Record<string, number> = {};
-    expenses.forEach((t) => {
-      grouped[t.category] = (grouped[t.category] || 0) + t.amount;
-    });
-
-    return Object.entries(grouped)
-      .map(([cat, amt]) => ({
-        category: cat,
-        amount: amt,
-        percentage: Math.round((amt / total) * 100),
-        meta: CATEGORY_MAP[cat] || CATEGORY_MAP.Other,
-      }))
-      .sort((a, b) => b.amount - a.amount);
-  }, [transactions, reportingCurrency]);
+  const categoryExpenses = useMemo(
+    () =>
+      expenseBreakdown(transactions, reportingCurrency).map((row) => ({
+        ...row,
+        meta: CATEGORY_MAP[row.category] || CATEGORY_MAP.Other,
+      })),
+    [transactions, reportingCurrency]
+  );
 
   // Filtered transactions
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      if (filterType !== "all" && t.type !== filterType) return false;
-      if (filterCategory !== "all" && t.category !== filterCategory) return false;
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesCategory = t.category.toLowerCase().includes(query);
-        const matchesNote = (t.note || "").toLowerCase().includes(query);
-        const matchesAmount = t.amount.toString().includes(query);
-        if (!matchesCategory && !matchesNote && !matchesAmount) return false;
-      }
-      return true;
-    });
-  }, [transactions, filterType, filterCategory, searchQuery]);
+  const filteredTransactions = useMemo(
+    () => filterTransactions(transactions, filterType, filterCategory, searchQuery),
+    [transactions, filterType, filterCategory, searchQuery]
+  );
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -253,14 +208,6 @@ export default function Home() {
   function handleQuickAddAmount(value: number) {
     const current = Number(form.amount) || 0;
     setForm({ ...form, amount: (current + value).toFixed(2).replace(/\.00$/, "") });
-  }
-
-  function formatCurrency(value: number, currency: Currency) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: currency === "JPY" || currency === "KRW" ? 0 : 2,
-    }).format(value);
   }
 
   return (
